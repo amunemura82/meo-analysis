@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MEO競合分析ツール | meo-tarou</title>
+<style>
+  :root {
+    --bg: #080c14;
+    --card: #0e1420;
+    --card2: #121828;
+    --border: #1e2a3a;
+    --accent: #00d4ff;
+    --accent2: #0099cc;
+    --gold: #f0a500;
+    --danger: #ff4466;
+    --success: #00cc88;
+    --text: #e0e8f0;
+    --muted: #7090a0;
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+    min-height: 100vh;
+    padding: 0 0 60px;
+  }
+
+  /* ヘッダー */
+  .header {
+    background: linear-gradient(135deg, #0a1020 0%, #0d1830 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 28px 24px 24px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .header::before {
+    content: '';
+    position: absolute;
+    top: -60px; left: 50%;
+    transform: translateX(-50%);
+    width: 400px; height: 200px;
+    background: radial-gradient(ellipse, #00d4ff15 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .header-tag {
+    display: inline-block;
+    background: var(--accent);
+    color: #000;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    padding: 4px 12px;
+    border-radius: 20px;
+    margin-bottom: 12px;
+  }
+  .header h1 {
+    font-size: 1.5rem;
+    font-weight: 900;
+    color: #fff;
+    letter-spacing: 0.04em;
+    margin-bottom: 6px;
+  }
+  .header h1 span { color: var(--accent); }
+  .header p {
+    font-size: 0.82rem;
+    color: var(--muted);
+  }
+
+  .container { max-width: 680px; margin: 0 auto; padding: 24px 16px; }
+
+  /* ライセンス画面 */
+  .license-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 60px 20px;
+  }
+  .license-icon { font-size: 3rem; margin-bottom: 16px; }
+  .license-screen h2 { font-size: 1.2rem; margin-bottom: 8px; color: #fff; }
+  .license-screen p { font-size: 0.85rem; color: var(--muted); margin-bottom: 24px; line-height: 1.7; }
+
+  /* カード */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    margin-bottom: 16px;
+  }
+  .card-title {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: 0.06em;
+    margin-bottom: 18px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card-title .num {
+    background: var(--accent);
+    color: #000;
+    font-size: 0.72rem;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 900;
+    flex-shrink: 0;
+  }
+
+  /* フォーム */
+  label {
+    display: block;
+    font-size: 0.78rem;
+    color: var(--muted);
+    margin-bottom: 6px;
+    margin-top: 14px;
+  }
+  label:first-of-type { margin-top: 0; }
+  input, select, textarea {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-size: 0.92rem;
+    padding: 11px 14px;
+    outline: none;
+    transition: border-color 0.2s;
+    font-family: inherit;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+  textarea { resize: vertical; min-height: 80px; }
+
+  /* スター */
+  .stars { display: flex; gap: 6px; margin-top: 6px; }
+  .star { font-size: 1.6rem; cursor: pointer; color: var(--border); transition: color 0.15s; user-select: none; }
+  .star.on { color: #ffd700; }
+
+  /* 競合セクション */
+  .rival-block {
+    background: var(--card2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px;
+    margin-bottom: 12px;
+    position: relative;
+  }
+  .rival-label {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--gold);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  /* ボタン */
+  .btn {
+    width: 100%;
+    padding: 15px;
+    border-radius: 12px;
+    border: none;
+    font-size: 0.97rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+    letter-spacing: 0.03em;
+  }
+  .btn-primary { background: var(--accent); color: #000; }
+  .btn-primary:hover { background: var(--accent2); }
+  .btn-primary:disabled { opacity: 0.35; cursor: not-allowed; }
+  .btn-copy {
+    background: transparent;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    margin-top: 10px;
+    padding: 11px;
+    font-size: 0.88rem;
+  }
+  .btn-copy:hover { background: var(--accent); color: #000; }
+
+  /* 結果 */
+  .result-section { display: none; }
+  .result-header {
+    text-align: center;
+    padding: 28px 0 20px;
+  }
+  .result-header h2 { font-size: 1.1rem; color: var(--accent); margin-bottom: 6px; }
+
+  /* スコアメーター */
+  .score-meter {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px 24px;
+    text-align: center;
+    margin-bottom: 16px;
+  }
+  .score-label { font-size: 0.8rem; color: var(--muted); margin-bottom: 8px; }
+  .score-num {
+    font-size: 4rem;
+    font-weight: 900;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .score-bar-wrap {
+    background: var(--border);
+    border-radius: 10px;
+    height: 10px;
+    margin: 16px 0 8px;
+    overflow: hidden;
+  }
+  .score-bar {
+    height: 100%;
+    border-radius: 10px;
+    transition: width 1s ease;
+  }
+  .score-comment { font-size: 0.85rem; color: var(--muted); }
+
+  /* 結果ブロック */
+  .result-block {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 22px;
+    margin-bottom: 14px;
+  }
+  .result-block-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .result-text {
+    font-size: 0.9rem;
+    line-height: 1.8;
+    color: var(--text);
+    white-space: pre-wrap;
+  }
+
+  /* TOP5リスト */
+  .top5-list { list-style: none; }
+  .top5-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.9rem;
+    line-height: 1.6;
+  }
+  .top5-item:last-child { border-bottom: none; }
+  .top5-num {
+    background: var(--accent);
+    color: #000;
+    font-size: 0.72rem;
+    font-weight: 900;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  /* メッセージ */
+  .msg {
+    font-size: 0.82rem;
+    padding: 10px 14px;
+    border-radius: 8px;
+    margin-top: 10px;
+  }
+  .msg-err { background: #2a0a10; color: var(--danger); border: 1px solid #ff446633; }
+  .msg-ok  { background: #0a2a18; color: var(--success); border: 1px solid #00cc8833; }
+
+  /* スピナー */
+  .spinner {
+    display: inline-block;
+    width: 16px; height: 16px;
+    border: 2px solid #fff4;
+    border-top-color: #000;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    vertical-align: middle;
+    margin-right: 6px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ライセンス入力 */
+  #licenseInput { text-align: center; letter-spacing: 0.08em; font-size: 1rem; }
+  #mainApp { display: none; }
+
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 8px 0 16px;
+  }
+
+  /* レスポンシブ */
+  @media (max-width: 480px) {
+    .header h1 { font-size: 1.2rem; }
+    .score-num { font-size: 3rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-tag">MEO ANALYSIS TOOL</div>
+  <h1>MEO <span>競合分析</span>レポート</h1>
+  <p>自店 vs 競合を比較・スコア化し、今すぐやるべき戦略を提示</p>
+</div>
+
+<!-- ライセンス認証 -->
+<div class="container" id="licenseScreen">
+  <div class="license-screen">
+    <div class="license-icon">🔐</div>
+    <h2>アクセスコードを入力</h2>
+    <p>ご購入時にお送りしたアクセスコードを入力してください</p>
+    <input type="text" id="licenseInput" placeholder="MEO-XXXX-XXXX" style="max-width:320px; margin: 0 auto 12px;" />
+    <div id="licenseMsg"></div>
+    <button class="btn btn-primary" onclick="verifyLicense()" style="max-width:280px; margin-top:14px;">
+      認証する
+    </button>
+  </div>
+</div>
+
+<!-- メインアプリ -->
+<div class="container" id="mainApp">
+
+  <!-- 自店情報 -->
+  <div class="card">
+    <div class="card-title"><span class="num">1</span>自店情報を入力</div>
+
+    <label>店舗名 *</label>
+    <input type="text" id="myName" placeholder="例：〇〇ラーメン 燕店" />
+
+    <label>業種 *</label>
+    <select id="myGenre">
+      <option value="">選択してください</option>
+      <option>ラーメン・麺類</option>
+      <option>居酒屋・バー</option>
+      <option>カフェ・喫茶店</option>
+      <option>焼肉・ステーキ</option>
+      <option>寿司・和食</option>
+      <option>イタリアン・フレンチ</option>
+      <option>美容室・理容室</option>
+      <option>整体・マッサージ</option>
+      <option>歯科・クリニック</option>
+      <option>ネイルサロン</option>
+      <option>小売・雑貨</option>
+      <option>その他</option>
+    </select>
+
+    <label>エリア *</label>
+    <input type="text" id="myArea" placeholder="例：新潟県燕市" />
+
+    <label>Googleレビュー数</label>
+    <input type="number" id="myReviews" placeholder="例：24" min="0" />
+
+    <label>平均評価（星）</label>
+    <div class="stars" id="myStars">
+      <span class="star" data-v="1" onclick="setStar('my',1)">★</span>
+      <span class="star" data-v="2" onclick="setStar('my',2)">★</span>
+      <span class="star" data-v="3" onclick="setStar('my',3)">★</span>
+      <span class="star" data-v="4" onclick="setStar('my',4)">★</span>
+      <span class="star" data-v="5" onclick="setStar('my',5)">★</span>
+    </div>
+
+    <label>月間投稿頻度</label>
+    <select id="myPostFreq">
+      <option value="">選択してください</option>
+      <option value="0">ほぼ投稿していない</option>
+      <option value="1">月1回以下</option>
+      <option value="4">週1回程度</option>
+      <option value="8">週2回程度</option>
+      <option value="16">ほぼ毎日</option>
+    </select>
+
+    <label>登録写真枚数（目安）</label>
+    <input type="number" id="myPhotos" placeholder="例：12" min="0" />
+
+    <label>口コミへの返信状況</label>
+    <select id="myReply">
+      <option value="">選択してください</option>
+      <option value="none">ほぼ返信していない</option>
+      <option value="some">たまに返信している</option>
+      <option value="all">ほぼ全件返信している</option>
+    </select>
+
+    <label>低評価レビューの内容（あれば）</label>
+    <textarea id="myNegative" placeholder="例：「駐車場が狭い」「待ち時間が長い」など、気になる低評価の内容を入力"></textarea>
+  </div>
+
+  <!-- 競合情報 -->
+  <div class="card">
+    <div class="card-title"><span class="num">2</span>競合店情報を入力（最大3店）</div>
+
+    <div class="rival-block" id="rival1">
+      <div class="rival-label">🏆 競合店 1</div>
+      <label>店舗名</label>
+      <input type="text" class="r-name" placeholder="例：△△ラーメン" />
+      <label>レビュー数</label>
+      <input type="number" class="r-reviews" placeholder="例：86" min="0" />
+      <label>平均評価（星）</label>
+      <div class="stars r-stars">
+        <span class="star" onclick="setRivalStar(0,1)">★</span>
+        <span class="star" onclick="setRivalStar(0,2)">★</span>
+        <span class="star" onclick="setRivalStar(0,3)">★</span>
+        <span class="star" onclick="setRivalStar(0,4)">★</span>
+        <span class="star" onclick="setRivalStar(0,5)">★</span>
+      </div>
+      <label>月間投稿頻度</label>
+      <select class="r-freq">
+        <option value="">選択</option>
+        <option value="0">ほぼなし</option>
+        <option value="1">月1以下</option>
+        <option value="4">週1程度</option>
+        <option value="8">週2程度</option>
+        <option value="16">ほぼ毎日</option>
+      </select>
+      <label>写真枚数（目安）</label>
+      <input type="number" class="r-photos" placeholder="例：45" min="0" />
+      <label>返信状況</label>
+      <select class="r-reply">
+        <option value="">選択</option>
+        <option value="none">ほぼなし</option>
+        <option value="some">たまに</option>
+        <option value="all">ほぼ全件</option>
+      </select>
+      <label>特記事項（強み・弱みなど）</label>
+      <textarea class="r-note" placeholder="例：写真がプロ品質・低評価への返信が雑など"></textarea>
+    </div>
+
+    <div class="rival-block" id="rival2">
+      <div class="rival-label">🥈 競合店 2（任意）</div>
+      <label>店舗名</label>
+      <input type="text" class="r-name" placeholder="例：□□食堂" />
+      <label>レビュー数</label>
+      <input type="number" class="r-reviews" placeholder="" min="0" />
+      <label>平均評価（星）</label>
+      <div class="stars r-stars">
+        <span class="star" onclick="setRivalStar(1,1)">★</span>
+        <span class="star" onclick="setRivalStar(1,2)">★</span>
+        <span class="star" onclick="setRivalStar(1,3)">★</span>
+        <span class="star" onclick="setRivalStar(1,4)">★</span>
+        <span class="star" onclick="setRivalStar(1,5)">★</span>
+      </div>
+      <label>月間投稿頻度</label>
+      <select class="r-freq">
+        <option value="">選択</option>
+        <option value="0">ほぼなし</option>
+        <option value="1">月1以下</option>
+        <option value="4">週1程度</option>
+        <option value="8">週2程度</option>
+        <option value="16">ほぼ毎日</option>
+      </select>
+      <label>写真枚数（目安）</label>
+      <input type="number" class="r-photos" placeholder="" min="0" />
+      <label>返信状況</label>
+      <select class="r-reply">
+        <option value="">選択</option>
+        <option value="none">ほぼなし</option>
+        <option value="some">たまに</option>
+        <option value="all">ほぼ全件</option>
+      </select>
+      <label>特記事項</label>
+      <textarea class="r-note" placeholder="任意"></textarea>
+    </div>
+
+    <div class="rival-block" id="rival3">
+      <div class="rival-label">🥉 競合店 3（任意）</div>
+      <label>店舗名</label>
+      <input type="text" class="r-name" placeholder="例：◇◇亭" />
+      <label>レビュー数</label>
+      <input type="number" class="r-reviews" placeholder="" min="0" />
+      <label>平均評価（星）</label>
+      <div class="stars r-stars">
+        <span class="star" onclick="setRivalStar(2,1)">★</span>
+        <span class="star" onclick="setRivalStar(2,2)">★</span>
+        <span class="star" onclick="setRivalStar(2,3)">★</span>
+        <span class="star" onclick="setRivalStar(2,4)">★</span>
+        <span class="star" onclick="setRivalStar(2,5)">★</span>
+      </div>
+      <label>月間投稿頻度</label>
+      <select class="r-freq">
+        <option value="">選択</option>
+        <option value="0">ほぼなし</option>
+        <option value="1">月1以下</option>
+        <option value="4">週1程度</option>
+        <option value="8">週2程度</option>
+        <option value="16">ほぼ毎日</option>
+      </select>
+      <label>写真枚数（目安）</label>
+      <input type="number" class="r-photos" placeholder="" min="0" />
+      <label>返信状況</label>
+      <select class="r-reply">
+        <option value="">選択</option>
+        <option value="none">ほぼなし</option>
+        <option value="some">たまに</option>
+        <option value="all">ほぼ全件</option>
+      </select>
+      <label>特記事項</label>
+      <textarea class="r-note" placeholder="任意"></textarea>
+    </div>
+  </div>
+
+  <button class="btn btn-primary" id="analyzeBtn" onclick="analyze()" disabled>
+    🔍 競合分析レポートを生成する
+  </button>
+  <div id="analyzeMsg"></div>
+
+  <!-- 結果エリア -->
+  <div class="result-section" id="resultSection">
+    <div class="result-header">
+      <h2>📊 MEO競合分析レポート</h2>
+      <p style="font-size:0.8rem; color:var(--muted);">AIによる戦略分析結果</p>
+    </div>
+
+    <!-- スコア -->
+    <div class="score-meter">
+      <div class="score-label">あなたのMEOスコア（競合比較）</div>
+      <div class="score-num" id="scoreNum" style="color: var(--accent);">--</div>
+      <div style="font-size:0.75rem; color:var(--muted); margin-bottom:8px;">/ 100点</div>
+      <div class="score-bar-wrap">
+        <div class="score-bar" id="scoreBar" style="width:0%; background: var(--accent);"></div>
+      </div>
+      <div class="score-comment" id="scoreComment"></div>
+    </div>
+
+    <!-- 弱点 -->
+    <div class="result-block">
+      <div class="result-block-title" style="color: var(--danger);">⚠️ 弱いポイント・改善が必要な箇所</div>
+      <div class="result-text" id="weakPoints"></div>
+    </div>
+
+    <!-- 見かけ倒し診断 -->
+    <div class="result-block">
+      <div class="result-block-title" style="color: var(--gold);">🔍 競合「見かけ倒し」診断</div>
+      <div class="result-text" id="fakeStrong"></div>
+    </div>
+
+    <!-- TOP5 -->
+    <div class="result-block">
+      <div class="result-block-title" style="color: var(--success);">✅ 今すぐやるべきTOP5</div>
+      <ul class="top5-list" id="top5List"></ul>
+    </div>
+
+    <!-- ネガティブ返信戦略 -->
+    <div class="result-block" id="negativeBlock" style="display:none;">
+      <div class="result-block-title" style="color: var(--accent);">💬 ネガティブレビュー切り返し戦略</div>
+      <div class="result-text" id="negativeStrategy"></div>
+    </div>
+
+    <!-- 写真×時事ネタ戦略 -->
+    <div class="result-block">
+      <div class="result-block-title" style="color: var(--accent);">📸 写真×時事ネタ戦略</div>
+      <div class="result-text" id="photoStrategy"></div>
+    </div>
+
+    <button class="btn btn-copy" onclick="copyAll()">📋 レポート全文をコピー</button>
+    <div id="copyMsg"></div>
+  </div>
+
+</div>
+
+<script>
+let myRating = 0;
+let rivalRatings = [0, 0, 0];
+let accessCode = '';
+
+// ライセンス認証
+async function verifyLicense() {
+  const code = document.getElementById('licenseInput').value.trim().toUpperCase();
+  const msg = document.getElementById('licenseMsg');
+  if (!code) { msg.innerHTML = '<div class="msg msg-err">コードを入力してください</div>'; return; }
+
+  const btn = event.target;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>認証中...';
+
+  try {
+    const res = await fetch('https://gbp-proxy.tsubaroku1792.workers.dev', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        password: code,
+        payload: {
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 10,
+          messages: [{ role: 'user', content: 'ping' }]
+        }
+      })
+    });
+    const data = await res.json();
+    if (data.error && data.error.message === 'パスワードが正しくありません') {
+      msg.innerHTML = '<div class="msg msg-err">アクセスコードが無効です。ご購入時のコードをご確認ください。</div>';
+      btn.disabled = false; btn.innerHTML = '認証する';
+    } else {
+      accessCode = code;
+      localStorage.setItem('meo_analysis_code', code);
+      document.getElementById('licenseScreen').style.display = 'none';
+      document.getElementById('mainApp').style.display = 'block';
+      setupValidation();
+    }
+  } catch(e) {
+    msg.innerHTML = '<div class="msg msg-err">通信エラーが発生しました。再度お試しください。</div>';
+    btn.disabled = false; btn.innerHTML = '認証する';
+  }
+}
+
+window.addEventListener('load', () => {
+  const saved = localStorage.getItem('meo_analysis_code');
+  if (saved) { document.getElementById('licenseInput').value = saved; verifyLicense(); }
+});
+
+// 星評価
+function setStar(type, v) {
+  myRating = v;
+  document.querySelectorAll('#myStars .star').forEach(s => {
+    s.classList.toggle('on', parseInt(s.dataset.v) <= v);
+  });
+  checkForm();
+}
+
+function setRivalStar(idx, v) {
+  rivalRatings[idx] = v;
+  const blocks = document.querySelectorAll('.r-stars');
+  blocks[idx].querySelectorAll('.star').forEach((s, i) => {
+    s.classList.toggle('on', i < v);
+  });
+}
+
+// バリデーション
+function setupValidation() {
+  ['myName','myGenre','myArea'].forEach(id => {
+    document.getElementById(id).addEventListener('input', checkForm);
+    document.getElementById(id).addEventListener('change', checkForm);
+  });
+}
+function checkForm() {
+  const ok = document.getElementById('myName').value.trim() &&
+             document.getElementById('myGenre').value &&
+             document.getElementById('myArea').value.trim();
+  document.getElementById('analyzeBtn').disabled = !ok;
+}
+
+// 分析実行
+async function analyze() {
+  const btn = document.getElementById('analyzeBtn');
+  const msg = document.getElementById('analyzeMsg');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>AIが分析中です（30秒ほどかかります）...';
+  msg.innerHTML = '';
+  document.getElementById('resultSection').style.display = 'none';
+
+  // 自店データ収集
+  const myData = {
+    name: document.getElementById('myName').value.trim(),
+    genre: document.getElementById('myGenre').value,
+    area: document.getElementById('myArea').value.trim(),
+    reviews: document.getElementById('myReviews').value || '不明',
+    rating: myRating || '不明',
+    postFreq: document.getElementById('myPostFreq').value || '不明',
+    photos: document.getElementById('myPhotos').value || '不明',
+    reply: document.getElementById('myReply').value || '不明',
+    negative: document.getElementById('myNegative').value.trim()
+  };
+
+  // 競合データ収集
+  const rivals = [];
+  const rBlocks = document.querySelectorAll('.rival-block');
+  rBlocks.forEach((block, i) => {
+    const name = block.querySelector('.r-name').value.trim();
+    if (!name) return;
+    rivals.push({
+      name,
+      reviews: block.querySelector('.r-reviews').value || '不明',
+      rating: rivalRatings[i] || '不明',
+      postFreq: block.querySelector('.r-freq').value || '不明',
+      photos: block.querySelector('.r-photos').value || '不明',
+      reply: block.querySelector('.r-reply').value || '不明',
+      note: block.querySelector('.r-note').value.trim()
+    });
+  });
+
+  const replyMap = { none: 'ほぼ返信なし', some: 'たまに返信', all: 'ほぼ全件返信' };
+  const freqMap = { '0': 'ほぼなし', '1': '月1以下', '4': '週1程度', '8': '週2程度', '16': 'ほぼ毎日' };
+
+  const myDesc = `【自店】${myData.name}（${myData.genre}・${myData.area}）
+レビュー数：${myData.reviews}件　平均評価：${myData.rating}★
+投稿頻度：${freqMap[myData.postFreq] || myData.postFreq}　写真枚数：${myData.photos}枚
+口コミ返信：${replyMap[myData.reply] || myData.reply}
+低評価の内容：${myData.negative || 'なし'}`;
+
+  const rivalsDesc = rivals.length > 0
+    ? rivals.map((r,i) => `【競合${i+1}】${r.name}
+レビュー数：${r.reviews}件　平均評価：${r.rating}★
+投稿頻度：${freqMap[r.postFreq] || r.postFreq}　写真枚数：${r.photos}枚
+口コミ返信：${replyMap[r.reply] || r.reply}
+特記事項：${r.note || 'なし'}`).join('\n\n')
+    : '競合情報なし（自店単体での分析）';
+
+  const prompt = `あなたはMEO（Googleマップ最適化）の専門コンサルタントです。以下の情報を分析し、JSON形式で回答してください。
+
+${myDesc}
+
+${rivalsDesc}
+
+以下のJSON形式のみで回答してください（説明文・前置き・コードブロック不要）：
+{
+  "score": 数値(0-100),
+  "scoreComment": "スコアに対する一言コメント",
+  "weakPoints": "弱いポイントの分析（箇条書き・具体的に）",
+  "fakeStrong": "競合の見かけ倒し診断（数字は高くても実態が伴っていない点、本当に強い点を見極める分析）",
+  "top5": ["やるべきこと1", "やるべきこと2", "やるべきこと3", "やるべきこと4", "やるべきこと5"],
+  "negativeStrategy": "低評価レビューへの切り返し戦略（具体的な返信の型と考え方）",
+  "photoStrategy": "写真×時事ネタ戦略（映えより伝わる写真の方向性と、今の季節・地域・業種に合った投稿テーマ提案）"
+}`;
+
+  try {
+    const res = await fetch('https://gbp-proxy.tsubaroku1792.workers.dev', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        password: accessCode,
+        payload: {
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 2000,
+          messages: [{ role: 'user', content: prompt }]
+        }
+      })
+    });
+
+    const data = await res.json();
+
+    if (data.error) {
+      msg.innerHTML = `<div class="msg msg-err">エラー：${data.error.message}</div>`;
+      btn.disabled = false; btn.innerHTML = '🔍 競合分析レポートを生成する';
+      checkForm();
+      return;
+    }
+
+    const raw = data.content?.[0]?.text || '';
+    const clean = raw.replace(/```json|```/g, '').trim();
+    const result = JSON.parse(clean);
+
+    // スコア表示
+    const score = result.score || 0;
+    document.getElementById('scoreNum').textContent = score;
+    document.getElementById('scoreComment').textContent = result.scoreComment || '';
+    const bar = document.getElementById('scoreBar');
+    const scoreColor = score >= 70 ? 'var(--success)' : score >= 40 ? 'var(--gold)' : 'var(--danger)';
+    bar.style.background = scoreColor;
+    document.getElementById('scoreNum').style.color = scoreColor;
+    setTimeout(() => { bar.style.width = score + '%'; }, 100);
+
+    // 弱点
+    document.getElementById('weakPoints').textContent = result.weakPoints || '';
+
+    // 見かけ倒し
+    document.getElementById('fakeStrong').textContent = result.fakeStrong || '';
+
+    // TOP5
+    const top5 = document.getElementById('top5List');
+    top5.innerHTML = '';
+    (result.top5 || []).forEach((item, i) => {
+      top5.innerHTML += `<li class="top5-item"><span class="top5-num">${i+1}</span><span>${item}</span></li>`;
+    });
+
+    // ネガティブ戦略
+    if (result.negativeStrategy && myData.negative) {
+      document.getElementById('negativeStrategy').textContent = result.negativeStrategy;
+      document.getElementById('negativeBlock').style.display = 'block';
+    }
+
+    // 写真戦略
+    document.getElementById('photoStrategy').textContent = result.photoStrategy || '';
+
+    document.getElementById('resultSection').style.display = 'block';
+    document.getElementById('resultSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  } catch(e) {
+    msg.innerHTML = '<div class="msg msg-err">分析中にエラーが発生しました。再度お試しください。</div>';
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '🔍 競合分析レポートを生成する';
+  checkForm();
+}
+
+// 全文コピー
+function copyAll() {
+  const score = document.getElementById('scoreNum').textContent;
+  const weak = document.getElementById('weakPoints').textContent;
+  const fake = document.getElementById('fakeStrong').textContent;
+  const top5 = Array.from(document.querySelectorAll('.top5-item')).map((el,i) => `${i+1}. ${el.querySelector('span:last-child').textContent}`).join('\n');
+  const neg = document.getElementById('negativeStrategy').textContent;
+  const photo = document.getElementById('photoStrategy').textContent;
+
+  const text = `【MEO競合分析レポート】\n\nMEOスコア：${score}/100点\n\n▼弱いポイント\n${weak}\n\n▼競合見かけ倒し診断\n${fake}\n\n▼今すぐやるべきTOP5\n${top5}\n${neg ? '\n▼ネガティブレビュー切り返し戦略\n' + neg : ''}\n\n▼写真×時事ネタ戦略\n${photo}\n\nPowered by meo-tarou`;
+
+  navigator.clipboard.writeText(text).then(() => {
+    document.getElementById('copyMsg').innerHTML = '<div class="msg msg-ok">✅ コピーしました！</div>';
+    setTimeout(() => document.getElementById('copyMsg').innerHTML = '', 2500);
+  });
+}
+</script>
+</body>
+</html>
